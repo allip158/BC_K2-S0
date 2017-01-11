@@ -23,6 +23,17 @@ public strictfp class DefaultRobot {
 		return;
 	}
 	
+	public void donateToWin() throws GameActionException {
+		float bullets = rc.getTeamBullets();
+		int victoryPts = rc.getTeamVictoryPoints();
+		
+		int potentialPts = ((int) bullets)*GameConstants.BULLET_EXCHANGE_RATE;
+		
+		if ((GameConstants.VICTORY_POINTS_TO_WIN - victoryPts) <= potentialPts) {
+			rc.donate(bullets);
+		}
+	}
+	
     static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }

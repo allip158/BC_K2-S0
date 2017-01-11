@@ -1,5 +1,5 @@
 package k2so;
-import battlecode.common.*;
+import battlecode.common.*; 
 
 import java.util.Random;
 

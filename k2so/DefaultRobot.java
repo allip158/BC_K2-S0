@@ -16,13 +16,15 @@ public strictfp class DefaultRobot {
 	
 	public void run() throws GameActionException{
 		executeTurn();
+        donateToWin();
+        donateAtTheLastTurn();
 	}
 	
 	public void executeTurn() throws GameActionException{
 		tryMove(randomDirection());
 		return;
 	}
-	
+
 	public void donateToWin() throws GameActionException {
 		float bullets = rc.getTeamBullets();
 		int victoryPts = rc.getTeamVictoryPoints();
@@ -33,7 +35,13 @@ public strictfp class DefaultRobot {
 			rc.donate(bullets);
 		}
 	}
-	
+
+	public void donateAtTheLastTurn() throws GameActionException {
+        float bullets = rc.getTeamBullets();
+	    if(rc.getRoundNum() == (GameConstants.GAME_DEFAULT_ROUNDS - 1))
+            rc.donate(bullets);
+    }
+
     static Direction randomDirection() {
         return new Direction((float)Math.random() * 2 * (float)Math.PI);
     }
@@ -49,7 +57,6 @@ public strictfp class DefaultRobot {
             return true;
         }
 
-        boolean moved = false;
         int currentCheck = 1;
 
         while(currentCheck<=checksPerSide) {

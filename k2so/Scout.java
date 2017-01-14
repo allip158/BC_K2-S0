@@ -15,11 +15,6 @@ public class Scout extends DefaultRobot{
 	public void executeTurn() throws GameActionException {
 
 		try {
-			
-			// Listen for home archon's location
-			int xPos = rc.readBroadcast(0);
-			int yPos = rc.readBroadcast(1);
-			MapLocation archonLoc = new MapLocation(xPos,yPos);
 						
 			Direction dir = getDirection();
             tryMove(dir);
@@ -27,7 +22,7 @@ public class Scout extends DefaultRobot{
             calculateForestDensity();
 			
 		} catch (Exception e) {
-			System.out.println("Gardener Exception");
+			System.out.println("Scout Exception");
 			e.printStackTrace();
 		}
 	}
@@ -60,8 +55,6 @@ public class Scout extends DefaultRobot{
 			density = (float)numberOfTrees / (float)rc.getRoundNum();
 			broadcastDensity(density);
 		}
-		
-		
 	}
 
 	private void broadcastDensity(float density) {

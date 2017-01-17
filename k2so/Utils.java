@@ -23,4 +23,16 @@ public final class Utils {
 		}
 		return closestObject;
 	}
+
+	public static BodyInfo[] concatenateAllObjects(TreeInfo[] trees, RobotInfo[] robots, BulletInfo[] bullets) {
+		int treesLength = trees.length;
+		int robotsLength = robots.length;
+		int bulletsLengths = bullets.length;
+
+		BodyInfo[] gameObjects = new BodyInfo[treesLength + robotsLength + bulletsLengths];
+		System.arraycopy(trees, 0, gameObjects, 0, treesLength);
+		System.arraycopy(robots, 0, gameObjects, treesLength, robotsLength);
+		System.arraycopy(bullets, 0, gameObjects, treesLength + robotsLength, bulletsLengths);
+		return gameObjects;
+	}
 }

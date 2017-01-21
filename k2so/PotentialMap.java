@@ -2,7 +2,7 @@ package k2so;
 import battlecode.common.*;
 
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.*;
 
@@ -24,14 +24,13 @@ public class PotentialMap {
 
     /**
      * TODO
-     * @param mapSize
      * @param robots
      * @param bullets
      * @param trees
      * @param rc
      */
 
-    public PotentialMap(int mapSize, TreeInfo[] trees, RobotInfo[] robots, BulletInfo[] bullets, RobotController rc,
+    public PotentialMap(TreeInfo[] trees, RobotInfo[] robots, BulletInfo[] bullets, RobotController rc,
                         BiFunction<BodyInfo[], MapLocation, Double> objectsPotentialFunction) {
 
 
@@ -42,62 +41,93 @@ public class PotentialMap {
         cellSize = (rc.getType().strideRadius*2) / ((float) NUM_CELLS);
         map = new PotentialCell[NUM_CELLS][NUM_CELLS];
         startingCell = new PotentialCell(rc.getLocation(), (NUM_CELLS + 1)/2, (NUM_CELLS + 1)/2);
+        initializeAllMapCells();
         updateCellPotential(startingCell);
     }
+
+    private void initializeAllMapCells() {
+        for(int x = 0; x < NUM_CELLS; x++) {
+            for(int y = 0; y < NUM_CELLS; y++) {
+                // we already initialized the starting cell
+                if( x == (NUM_CELLS + 1)/2 || y == (NUM_CELLS + 1)/2) {
+                    continue;
+                }
+                map[x][y] = new PotentialCell(getMapLocationByCellCoordinates(x, y), x, y);
+            }
+        }
+    }
+
 
     public PotentialCell getStartingCell () {
         return startingCell;
     }
 
-
+    /**
+     * Returns all the cells surrounding a current location the the potential map
+     * @param xOffset x-coordinate in the potential map
+     * @param yOffset y-coordinate in the potential map
+     * @return
+     */
     public List<PotentialCell> getAllSurroundingCells(int xOffset, int yOffset){
-        // TODO
-        return null;
+        List<PotentialCell> surroundingCells = new ArrayList<>();
+        for(int x = -1; x <= 1; x++) {
+            for(int y = -1; y <= 1; y++) {
+                if (x == 0 && y == 0 ) {
+                    continue;
+                }
+
+                int newCellXOffset = xOffset + x;
+                int newCellYOffset = yOffset + y;
+                if (newCellXOffset < 0 || newCellXOffset >= NUM_CELLS || newCellYOffset < 0 || newCellYOffset >= NUM_CELLS) {
+                    continue;
+                }
+                surroundingCells.add(map[newCellXOffset][newCellYOffset]);
+            }
+        }
+        return surroundingCells;
     }
 
-
-
-    public void updateCellPotential(PotentialCell cell) {
+    public double updateCellPotential(PotentialCell cell) {
         if(cell == null) {
-            //technically and exception should be thrown here but i'll leave it just for debugging purposes
+            //technically an exception should be thrown here but i'll leave it just for debugging purposes
             System.out.print("cannot update cell with unknown coordinates");
-            return;
+            return -1;
         }
-        updateCellPotential(cell.getX(), cell.getY());
+        return updateCellPotential(cell.getX(), cell.getY());
     }
 
     /**
-     * Updates potential of a cell given its coordinates in the map.
+     * Updates potential of a cell given its coordinates in the map and/or returns the potential value
      * This method assumes that cell has already been initialized
      *
      * @param xOffset x coordinate in the map
      * @param yOffset y coordinate in the map
      */
-    public void updateCellPotential(int xOffset, int yOffset) {
+    public double updateCellPotential(int xOffset, int yOffset) {
         PotentialCell cell = map[xOffset][yOffset];
         if(cell.isPotentialSet()) {
-            System.out.println("Trying to update an potential cell that has already been computed");
-            return;
+            System.out.println("Trying to update a potential cell that has already been computed");
+            return cell.getPotentialValue();
         }
 
         MapLocation cellLocation = cell.getLocation();
         double potentialValue = objectsPotentialFunction.apply(gameObjects, cellLocation);
         //potentialValue += Arrays.asList(gameObjects).stream().mapToDouble(t -> objectsPotentialFunction.apply(t, cellLocation)).sum();
 
-
         cell.setPotentialValue(potentialValue);
+        return potentialValue;
     }
 
 
-    private MapLocation getCellLocationByMapCoordinates(int xOffset, int yOffset) {
+    private MapLocation getMapLocationByCellCoordinates(int xOffset, int yOffset) {
         //offset from the starting location
         int xOffsetToStart = xOffset - startingCell.getX();
         int yOffsetToStart = yOffset - startingCell.getY();
-        return new MapLocation()
+        return new MapLocation(startingCell.getX() + cellSize * xOffsetToStart, startingCell.getY() + cellSize * yOffsetToStart);
     }
 
 
-    private class PotentialCell {
+    public class PotentialCell {
 
         private MapLocation location;
         private final int x;
@@ -134,6 +164,10 @@ public class PotentialMap {
         public void setPotentialValue(double value) {
             potentialValue = value;
             isPotentialSet = true;
+        }
+
+        public double getDistanceToCell(PotentialCell cell){
+            return location.distanceTo(cell.getLocation());
         }
     }
 }

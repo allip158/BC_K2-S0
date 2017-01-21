@@ -9,19 +9,21 @@ import battlecode.common.RobotController;
 public class PotentialMapPathFinder {
     private PotentialMap map;
     private RobotController rc;
-    private PotentialMap.PotentialCell currentMapLocation;
-    private double
+    private PotentialMap.PotentialCell currentPotentialMapLocation;
+    private double pathTraveledSoFar;
+    private final double MAX_TRAVEL_DISTANCE; //equal to the stride length of the robot 
 
     public PotentialMapPathFinder(PotentialMap map, RobotController rc) {
         this.map = map;
         this.rc = rc;
-        currentMapLocation = map.getStartingCell();
-
+        currentPotentialMapLocation = map.getStartingCell();
+        pathTraveledSoFar = 0.0;
+        MAX_TRAVEL_DISTANCE = rc.getType().strideRadius;
     }
 
     private PotentialMap.PotentialCell getNextBestCell() {
         PotentialMap.PotentialCell nextCell = currentMapLocation;
-        for (PotentialMap.PotentialCell cell: map.getAllSurroundingCells(currentMapLocation.getX(), currentMapLocation.getY())) {
+        for(PotentialMap.PotentialCell cell: map.getAllSurroundingCells(currentPotentialMapLocation.getX(), currentPotentialMapLocation.getY())) {
             if(map.updateCellPotential(cell) > nextCell.getPotentialValue()){
                 nextCell = cell;
             }
@@ -31,7 +33,22 @@ public class PotentialMapPathFinder {
 
 
     public MapLocation getDestinationLocation() {
-
+        PotentialMap.PotentialCell destination = currentPotentialMapLocation;
+        PotentialMap.PotentialCell nextCell;
+        while(true) {
+            nextCell = getNextBestCell();
+            if(destination == nextCell) {
+                break; 
+            }
+            float distanceToNextCell = destination.getDistanceToCell(nextCell);
+            if(distanceToNextCell + pathTraveledSoFar > MAX_TRAVEL_DISTANCE) {
+                break; 
+            } else {
+                destination = nextCell;
+                this.pathTraveledSoFar += distanceToNextCell; 
+            }
+        }
+        return destination.getLocation();
     }
 
 }

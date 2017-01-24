@@ -1,10 +1,10 @@
 package k2so;
 import battlecode.common.*;
 
-public final class Utils {
+public final class RobotUtils {
 
 	//private constructor so that class can't be instantiated
-	private Utils () {}
+	private RobotUtils() {}
 
 	/**
 	 * Find a closest body to a give location among any array of bodies
@@ -34,5 +34,43 @@ public final class Utils {
 		System.arraycopy(robots, 0, gameObjects, treesLength, robotsLength);
 		System.arraycopy(bullets, 0, gameObjects, treesLength + robotsLength, bulletsLengths);
 		return gameObjects;
+	}
+
+	static Direction randomDirection() {
+		return new Direction((float)Math.random() * 2 * (float)Math.PI);
+	}
+
+	public static double getRobotValue(RobotType type) {
+		if(type == null) {
+			return 0.0;
+		}
+		switch (type) {
+			case ARCHON:
+				return 30.0;
+			case GARDENER:
+				return 3.0;
+			case LUMBERJACK:
+				return 3.0;
+			case SCOUT:
+				return 2.0;
+			case SOLDIER:
+				return 3.0;
+			case TANK:
+				return 10.0;
+			default:
+				return 0.0;
+		}
+	}
+
+	public static double getBulletPotential(BulletInfo bullet, MapLocation location) {
+		MapLocation bulletLocation = bullet.getLocation();
+		float distance = location.distanceTo(bulletLocation);
+		float angle = Math.abs(bulletLocation.directionTo(location).degreesBetween(bullet.getDir()));
+		double length= Math.sin(angle) * distance;
+		double height = Math.cos(angle) * distance;
+		double speed = bullet.getSpeed();
+		double damage = bullet.getDamage();
+		return (speed * damage) / (length * height);
+
 	}
 }

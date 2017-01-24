@@ -51,7 +51,7 @@ public class Scout extends DefaultRobot{
 		
 		updateNumberOfTrees();
 
-		if(rc.getRoundNum() > Constants.ROUNDS_FOR_DENSITY_CALCS) {
+		if(rc.getRoundNum() > RobotConstants.ROUNDS_FOR_DENSITY_CALCS) {
 			density = (float)numberOfTrees / (float)rc.getRoundNum();
 			broadcastDensity(density);
 		}

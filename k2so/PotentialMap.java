@@ -11,9 +11,9 @@ import java.util.function.*;
  */
 public class PotentialMap {
 
-    private final int NUM_CELLS = 9; //NUM_CELLS has to be and odd number
+    private final int NUM_CELLS = 5; //NUM_CELLS has to be and odd number
     private PotentialCell[][] map;
-    private PotentialCell lastComputedCell;
+    //private PotentialCell lastComputedCell;
     private PotentialCell startingCell; //this represents center of the map(i.e. robots starting point)
     private float cellSize;
 
@@ -33,9 +33,7 @@ public class PotentialMap {
     public PotentialMap(TreeInfo[] trees, RobotInfo[] robots, BulletInfo[] bullets, RobotController rc,
                         BiFunction<BodyInfo[], MapLocation, Double> objectsPotentialFunction) {
 
-
-        this.gameObjects = Utils.concatenateAllObjects(trees, robots, bullets);
-
+        this.gameObjects = RobotUtils.concatenateAllObjects(trees, robots, bullets);
         this.objectsPotentialFunction = objectsPotentialFunction;
 
         cellSize = (rc.getType().strideRadius*2) / ((float) NUM_CELLS);
@@ -48,10 +46,6 @@ public class PotentialMap {
     private void initializeAllMapCells() {
         for(int x = 0; x < NUM_CELLS; x++) {
             for(int y = 0; y < NUM_CELLS; y++) {
-                // we already initialized the starting cell
-                if( x == (NUM_CELLS + 1)/2 || y == (NUM_CELLS + 1)/2) {
-                    continue;
-                }
                 map[x][y] = new PotentialCell(getMapLocationByCellCoordinates(x, y), x, y);
             }
         }
@@ -123,7 +117,7 @@ public class PotentialMap {
         //offset from the starting location
         int xOffsetToStart = xOffset - startingCell.getX();
         int yOffsetToStart = yOffset - startingCell.getY();
-        return new MapLocation(startingCell.getX() + cellSize * xOffsetToStart, startingCell.getY() + cellSize * yOffsetToStart);
+        return new MapLocation(startingCell.getLocation().x + cellSize * xOffsetToStart, startingCell.getLocation().y + cellSize * yOffsetToStart);
     }
 
 
@@ -166,7 +160,7 @@ public class PotentialMap {
             isPotentialSet = true;
         }
 
-        public double getDistanceToCell(PotentialCell cell){
+        public float getDistanceToCell(PotentialCell cell){
             return location.distanceTo(cell.getLocation());
         }
     }

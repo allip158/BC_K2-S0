@@ -13,14 +13,14 @@ public class Archon extends DefaultRobot{
 
 		try{
 			// Randomly attempt to build a gardener in this direction
-			Direction dir = randomDirection();
+			Direction dir = RobotUtils.randomDirection();
 
 			if (rc.canHireGardener(dir) && Math.random() < .01) {
 				rc.hireGardener(dir);
 			} 
 
 			// Move randomly
-			tryMove(randomDirection());
+			tryMove(RobotUtils.randomDirection());
 
 			// Broadcast archon's location for other robots on the team to know
 			MapLocation myLocation = rc.getLocation();
@@ -31,8 +31,7 @@ public class Archon extends DefaultRobot{
 			System.out.println("Archon Exception");
 			e.printStackTrace();
 		}
-        
-        
+
 	}
 	
 }

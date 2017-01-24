@@ -1,10 +1,11 @@
 package k2so;
+
 import battlecode.common.*;
 
 
 public class Gardener extends DefaultRobot{
 		
-	static int numScoutsLeft = Constants.NUM_SCOUTS;
+	static int numScoutsLeft = RobotConstants.NUM_SCOUTS;
 	
 	public Gardener(RobotController rc) throws GameActionException {
 		super(rc);
@@ -21,7 +22,7 @@ public class Gardener extends DefaultRobot{
 			MapLocation archonLoc = new MapLocation(xPos,yPos);
 			
 			 // Generate a random direction
-            Direction dir = randomDirection();
+            Direction dir = RobotUtils.randomDirection();
 
             // Build the set number of scouts
 			while (numScoutsLeft > 0) {
@@ -29,21 +30,21 @@ public class Gardener extends DefaultRobot{
 					rc.buildRobot(RobotType.SCOUT, dir);
 					numScoutsLeft--;
 				} else {
-					tryMove(randomDirection());
+					tryMove(RobotUtils.randomDirection());
 				}
 			}
             
             // Randomly attempt to build a soldier or lumberjack in this direction
-            if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01 && rc.isBuildReady()) {
+			if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .5 && rc.isBuildReady()) {
+				rc.buildRobot(RobotType.LUMBERJACK, dir);
+			} else if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .49 && rc.isBuildReady()) {
                 rc.buildRobot(RobotType.SOLDIER, dir);
-            } else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) {
-                rc.buildRobot(RobotType.LUMBERJACK, dir);
-            } else if (rc.canBuildRobot(RobotType.TANK, dir) && Math.random() < .001 && rc.isBuildReady()) {
+            } else if (rc.canBuildRobot(RobotType.TANK, dir) && Math.random() < .01 && rc.isBuildReady()) {
             	rc.buildRobot(RobotType.TANK, dir);
             }
 
             // Move randomly
-            tryMove(randomDirection());
+            tryMove(RobotUtils.randomDirection());
 
 			
 		} catch (Exception e) {

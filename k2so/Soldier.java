@@ -29,7 +29,7 @@ public class Soldier extends DefaultRobot{
             }
 
             // Move randomly
-            tryMove(randomDirection());
+            tryMove(RobotUtils.randomDirection());
 
 			
 		} catch (Exception e) {

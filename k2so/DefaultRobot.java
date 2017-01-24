@@ -4,33 +4,35 @@ import battlecode.common.*;
 import java.util.Random;
 
 public strictfp class DefaultRobot {
-	static RobotController rc;
-	static RobotType rt;
-	static Random rand;
+	protected RobotController rc;
+    protected RobotType rt;
+    protected Random rand;
+    protected Team enemy;
 	
 	public DefaultRobot(RobotController rc){
 		this.rc = rc;
 		rand = new Random(rc.getID());
 		rt = rc.getType();
+        enemy = rc.getTeam().opponent();
 	}
 	
 	public void run() throws GameActionException{
 		executeTurn();
-        donateToWin();
+        //donateToWin();
         donateAtTheLastTurn();
 	}
 	
 	public void executeTurn() throws GameActionException{
-		tryMove(randomDirection());
+		tryMove(RobotUtils.randomDirection());
 		return;
 	}
 
 	public void donateToWin() throws GameActionException {
 		float bullets = rc.getTeamBullets();
 		int victoryPts = rc.getTeamVictoryPoints();
-		
-		int potentialPts = ((int) bullets) / GameConstants.BULLET_EXCHANGE_RATE;
-		
+
+		int potentialPts = (int)((bullets) / rc.getVictoryPointCost());
+
 		if ((GameConstants.VICTORY_POINTS_TO_WIN - victoryPts) <= potentialPts) {
 			rc.donate(bullets);
 		}
@@ -42,15 +44,13 @@ public strictfp class DefaultRobot {
             rc.donate(bullets);
     }
 
-    static Direction randomDirection() {
-        return new Direction((float)Math.random() * 2 * (float)Math.PI);
-    }
 
-    static boolean tryMove(Direction dir) throws GameActionException {
+
+    boolean tryMove(Direction dir) throws GameActionException {
         return tryMove(dir,20,3);
     }
 
-    static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+    boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
         if (rc.canMove(dir)) {
             rc.move(dir);
@@ -76,7 +76,7 @@ public strictfp class DefaultRobot {
         return false;
     }
 
-    static boolean willCollideWithMe(BulletInfo bullet) {
+    boolean willCollideWithMe(BulletInfo bullet) {
         MapLocation myLocation = rc.getLocation();
 
         Direction propagationDirection = bullet.dir;
@@ -95,5 +95,5 @@ public strictfp class DefaultRobot {
         return (perpendicularDist <= rt.bodyRadius);
     }
 
-	
+
 }

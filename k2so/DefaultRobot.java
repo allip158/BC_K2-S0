@@ -27,7 +27,7 @@ public strictfp class DefaultRobot {
 		float bullets = rc.getTeamBullets();
 		int victoryPts = rc.getTeamVictoryPoints();
 		
-		int potentialPts = ((int) bullets) / GameConstants.BULLET_EXCHANGE_RATE;
+		int potentialPts = (int)(bullets / rc.getVictoryPointCost());
 		
 		if ((GameConstants.VICTORY_POINTS_TO_WIN - victoryPts) <= potentialPts) {
 			rc.donate(bullets);

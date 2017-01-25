@@ -23,7 +23,7 @@ public strictfp class DefaultRobot {
 	}
 	
 	public void executeTurn() throws GameActionException{
-		tryMove(RobotUtils.randomDirection());
+		tryMove(Utils.randomDirection());
 		return;
 	}
 

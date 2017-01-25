@@ -11,7 +11,7 @@ import java.util.function.*;
  */
 public class PotentialMap {
 
-    private final int NUM_CELLS = 5; //NUM_CELLS has to be and odd number
+    private final int NUM_CELLS = 3; //NUM_CELLS has to be and odd number
     private PotentialCell[][] map;
     //private PotentialCell lastComputedCell;
     private PotentialCell startingCell; //this represents center of the map(i.e. robots starting point)
@@ -20,8 +20,8 @@ public class PotentialMap {
     private BodyInfo[] gameObjects;//array of all objects in the robot's vision
 
     private BiFunction<BodyInfo[], MapLocation, Double> objectsPotentialFunction;
-
-
+    private BiFunction<MapLocation, MapLocation, Double> pointPotential;
+    private MapLocation attractingPoint;
     /**
      * TODO
      * @param robots
@@ -31,16 +31,19 @@ public class PotentialMap {
      */
 
     public PotentialMap(TreeInfo[] trees, RobotInfo[] robots, BulletInfo[] bullets, RobotController rc,
-                        BiFunction<BodyInfo[], MapLocation, Double> objectsPotentialFunction) {
+                        BiFunction<BodyInfo[], MapLocation, Double> objectsPotentialFunction, BiFunction<MapLocation, MapLocation, Double> pointPotential, MapLocation attractingPoint) {
 
-        this.gameObjects = RobotUtils.concatenateAllObjects(trees, robots, bullets);
+        this.gameObjects = Utils.concatenateAllObjects(trees, robots, bullets);
         this.objectsPotentialFunction = objectsPotentialFunction;
+        this.pointPotential = pointPotential;
+        this.attractingPoint = attractingPoint;
 
         cellSize = (rc.getType().strideRadius*2) / ((float) NUM_CELLS);
         map = new PotentialCell[NUM_CELLS][NUM_CELLS];
-        startingCell = new PotentialCell(rc.getLocation(), (NUM_CELLS + 1)/2, (NUM_CELLS + 1)/2);
+        startingCell = new PotentialCell(rc.getLocation(), (NUM_CELLS - 1)/2, (NUM_CELLS - 1)/2);
         initializeAllMapCells();
         updateCellPotential(startingCell);
+        map[(NUM_CELLS - 1)/2][(NUM_CELLS - 1)/2] = startingCell;
     }
 
     private void initializeAllMapCells() {
@@ -103,12 +106,13 @@ public class PotentialMap {
             System.out.println("Trying to update a potential cell that has already been computed");
             return cell.getPotentialValue();
         }
-
+        System.out.println("Computing cell's potential");
         MapLocation cellLocation = cell.getLocation();
         double potentialValue = objectsPotentialFunction.apply(gameObjects, cellLocation);
+        potentialValue += pointPotential.apply(attractingPoint, cellLocation);
         //potentialValue += Arrays.asList(gameObjects).stream().mapToDouble(t -> objectsPotentialFunction.apply(t, cellLocation)).sum();
 
-        cell.setPotentialValue(potentialValue);
+        map[xOffset][yOffset].setPotentialValue(potentialValue);
         return potentialValue;
     }
 

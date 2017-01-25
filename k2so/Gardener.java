@@ -5,7 +5,7 @@ import battlecode.common.*;
 
 public class Gardener extends DefaultRobot{
 		
-	static int numScoutsLeft = RobotConstants.NUM_SCOUTS;
+	static int numScoutsLeft = Constants.NUM_SCOUTS;
 	
 	public Gardener(RobotController rc) throws GameActionException {
 		super(rc);
@@ -22,7 +22,7 @@ public class Gardener extends DefaultRobot{
 			MapLocation archonLoc = new MapLocation(xPos,yPos);
 			
 			 // Generate a random direction
-            Direction dir = RobotUtils.randomDirection();
+            Direction dir = Utils.randomDirection();
 
             // Build the set number of scouts
 			while (numScoutsLeft > 0) {
@@ -30,7 +30,7 @@ public class Gardener extends DefaultRobot{
 					rc.buildRobot(RobotType.SCOUT, dir);
 					numScoutsLeft--;
 				} else {
-					tryMove(RobotUtils.randomDirection());
+					tryMove(Utils.randomDirection());
 				}
 			}
             
@@ -44,7 +44,7 @@ public class Gardener extends DefaultRobot{
             }
 
             // Move randomly
-            tryMove(RobotUtils.randomDirection());
+            tryMove(Utils.randomDirection());
 
 			
 		} catch (Exception e) {

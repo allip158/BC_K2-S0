@@ -1,10 +1,10 @@
 package k2so;
 import battlecode.common.*;
 
-public final class RobotUtils {
+public final class Utils {
 
 	//private constructor so that class can't be instantiated
-	private RobotUtils() {}
+	private Utils() {}
 
 	/**
 	 * Find a closest body to a give location among any array of bodies
@@ -46,7 +46,7 @@ public final class RobotUtils {
 		}
 		switch (type) {
 			case ARCHON:
-				return 30.0;
+				return 50.0;
 			case GARDENER:
 				return 3.0;
 			case LUMBERJACK:
@@ -61,6 +61,19 @@ public final class RobotUtils {
 				return 0.0;
 		}
 	}
+
+	public static double getBulletTreeValue() {
+		return 2.0;
+	}
+
+	public static double getRobotsValues(RobotInfo[] robots) {
+		double value = 0.0;
+		for(RobotInfo rbt: robots) {
+			value += Utils.getRobotValue(rbt.getType());
+		}
+		return value;
+	}
+
 
 	public static double getBulletPotential(BulletInfo bullet, MapLocation location) {
 		MapLocation bulletLocation = bullet.getLocation();

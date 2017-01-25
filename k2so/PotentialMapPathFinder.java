@@ -3,6 +3,8 @@ package k2so;
 import battlecode.common.MapLocation;
 import battlecode.common.RobotController;
 
+import java.util.List;
+
 /**
  * Created by Andrey on 1/20/2017.
  */
@@ -20,37 +22,29 @@ public class PotentialMapPathFinder {
     }
 
     private PotentialMap.PotentialCell getNextBestCell() {
-        System.out.println("I'm stuck here!");
-        System.out.println(map.updateCellPotential(currentPotentialMapLocation));
         PotentialMap.PotentialCell nextCell = currentPotentialMapLocation;
-        for(PotentialMap.PotentialCell cell: map.getAllSurroundingCells(currentPotentialMapLocation.getX(), currentPotentialMapLocation.getY())) {
+        map.updateCellPotential(nextCell);
+        List<PotentialMap.PotentialCell> surroundingCells = map.getAllSurroundingCells(currentPotentialMapLocation.getX(), currentPotentialMapLocation.getY());
+        for(PotentialMap.PotentialCell cell: surroundingCells) {
             //go to the cell with lower potential
-            System.out.println(map.updateCellPotential(cell));
-            System.out.println("Coordinates: " + cell.getLocation().x + " " + cell.getLocation().y);
-            if(cell.getPotentialValue() < nextCell.getPotentialValue()){
+            if(map.updateCellPotential(cell) < nextCell.getPotentialValue()){
                 nextCell = cell;
             }
         }
-
         return nextCell;
     }
-
 
     public MapLocation getDestinationLocation() {
         PotentialMap.PotentialCell destination = currentPotentialMapLocation;
         PotentialMap.PotentialCell nextCell;
         while(true) {
-            System.out.println("let's see how many times we go through here");
             nextCell = getNextBestCell();
             if(destination == nextCell) {
-                System.out.println("we exit cuz equal");
-                break; 
+                break;
             }
             float distanceToNextCell = destination.getDistanceToCell(nextCell);
-            System.out.println("distance is  " + distanceToNextCell);
             if(distanceToNextCell + pathTraveledSoFar > MAX_TRAVEL_DISTANCE) {
-                System.out.println("we exit here");
-                break; 
+                break;
             } else {
                 destination = nextCell;
                 currentPotentialMapLocation = nextCell;

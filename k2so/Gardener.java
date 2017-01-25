@@ -1,6 +1,10 @@
 package k2so;
+
+import battlecode.common.*;
+
 import java.util.List;
 import java.util.Arrays;
+
 
 import battlecode.common.*;
 

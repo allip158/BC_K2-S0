@@ -7,26 +7,35 @@ import java.util.Random;
 // TODO: same robot should only write in one array location
 
 public strictfp class DefaultRobot {
-	static RobotController rc;
-	static RobotType rt;
-	static Random rand;
-		
-	public DefaultRobot(RobotController rc) throws GameActionException{
+
+	protected RobotController rc;
+    protected RobotType rt;
+    protected Random rand;
+    protected Team enemy;
+	
+	public DefaultRobot(RobotController rc){
+
 		this.rc = rc;
 		rand = new Random(rc.getID());
 		rt = rc.getType();
+        enemy = rc.getTeam().opponent();
 	}
 
 	public void run() throws GameActionException{
 		donateToWin();
 		executeTurn();
+     //donateToWin();
+    donateAtTheLastTurn();
+
 //		sendDeathSignal();
+
 	}
 	
 	public void executeTurn() throws GameActionException{
-		tryMove(randomDirection());
+		tryMove(Utils.randomDirection());
 		return;
 	}
+
 	
 	/**
 	 * 
@@ -73,23 +82,25 @@ public strictfp class DefaultRobot {
 			rc.donate(bullets);
 		}
 	}
-	
-    static Direction randomDirection() {
-        return new Direction((float)Math.random() * 2 * (float)Math.PI);
+
+	public void donateAtTheLastTurn() throws GameActionException {
+        float bullets = rc.getTeamBullets();
+	    if(rc.getRoundNum() == (rc.getRoundLimit() - 1))
+            rc.donate(bullets);
     }
 
-    static boolean tryMove(Direction dir) throws GameActionException {
+
+    boolean tryMove(Direction dir) throws GameActionException {
         return tryMove(dir,20,3);
     }
 
-    static boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
+    boolean tryMove(Direction dir, float degreeOffset, int checksPerSide) throws GameActionException {
 
         if (rc.canMove(dir)) {
             rc.move(dir);
             return true;
         }
 
-        boolean moved = false;
         int currentCheck = 1;
 
         while(currentCheck<=checksPerSide) {
@@ -109,7 +120,7 @@ public strictfp class DefaultRobot {
         return false;
     }
 
-    static boolean willCollideWithMe(BulletInfo bullet) {
+    boolean willCollideWithMe(BulletInfo bullet) {
         MapLocation myLocation = rc.getLocation();
 
         Direction propagationDirection = bullet.dir;
@@ -128,5 +139,5 @@ public strictfp class DefaultRobot {
         return (perpendicularDist <= rt.bodyRadius);
     }
 
-	
+
 }

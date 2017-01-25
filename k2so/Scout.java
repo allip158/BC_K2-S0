@@ -58,7 +58,7 @@ public class Scout extends DefaultRobot{
 	}
 
 	private void broadcastDensity(float density) {
-		System.out.println("Density for Scout " + String.valueOf(rc.getID()) + " : " + density);
+//		System.out.println("Density for Scout " + String.valueOf(rc.getID()) + " : " + density);
 		
 	}
 

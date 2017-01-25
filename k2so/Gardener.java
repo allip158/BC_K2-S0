@@ -3,12 +3,11 @@ import java.util.List;
 import java.util.Arrays;
 
 import battlecode.common.*;
-// TODO: Update tree status
 
-public class Gardener extends DefaultRobot{
-
-	static int numScoutsLeft = Constants.NUM_SCOUTS;
+public class Gardener extends DefaultRobot {
+	
 	Trees trees;
+	Boolean isBaby = true;
 
 	public Gardener(RobotController rc) throws GameActionException {
 		super(rc);
@@ -20,38 +19,30 @@ public class Gardener extends DefaultRobot{
 
 		try {
 
-			trees.garden();
+			/* The ratio of gardeners to builders */
+			if (rc.getID() % (Constants.RATIO_GARDENERS_TO_BUILDERS+1) < Constants.RATIO_GARDENERS_TO_BUILDERS) {
+				trees.garden();
+//				if(hasEnoughRoom() && !isBaby) {
+//					trees.garden();
+//				} else {
+//					MapLocation nearbyTree = getNearbyTreeLocation();
+//					if (nearbyTree != null) {
+//						// Direction away from trees
+//						Direction directionAway = rc.getLocation().directionTo(nearbyTree).opposite(); 
+//						tryMove(directionAway);
+//					} else {
+//						tryMove(randomDirection());
+//					}
+//				}
+			} else {
 
-			//			// Listen for home archon's location
-			//			int xPos = rc.readBroadcast(0);
-			//			int yPos = rc.readBroadcast(1);
-			//			MapLocation archonLoc = new MapLocation(xPos,yPos);
-			//			
-			//			 // Generate a random direction
-			//            Direction dir = randomDirection();
-			//
-			//            // Build the set number of scouts
-			//			while (numScoutsLeft > 0) {
-			//				if (rc.canBuildRobot(RobotType.SCOUT, dir)) {
-			//					rc.buildRobot(RobotType.SCOUT, dir);
-			//					numScoutsLeft--;
-			//				} else {
-			//					tryMove(randomDirection());
-			//				}
-			//			}
-			//            
-			//            // Randomly attempt to build a soldier or lumberjack in this direction
-			//            if (rc.canBuildRobot(RobotType.SOLDIER, dir) && Math.random() < .01 && rc.isBuildReady()) {
-			//                rc.buildRobot(RobotType.SOLDIER, dir);
-			//            } else if (rc.canBuildRobot(RobotType.LUMBERJACK, dir) && Math.random() < .01 && rc.isBuildReady()) {
-			//                rc.buildRobot(RobotType.LUMBERJACK, dir);
-			//            } else if (rc.canBuildRobot(RobotType.TANK, dir) && Math.random() < .001 && rc.isBuildReady()) {
-			//            	rc.buildRobot(RobotType.TANK, dir);
-			//            }
-			//
-			//            // Move randomly
-			//            tryMove(randomDirection());
+				// Generate a random direction
+				Direction dir = randomDirection();
+				buildRobot(dir);
 
+			}
+
+			isBaby = false;
 
 		} catch (Exception e) {
 			System.out.println("Gardener Exception");
@@ -59,18 +50,71 @@ public class Gardener extends DefaultRobot{
 		}
 	}
 
-	/*
-	 * 	Farming Methods
-	 */
+	private boolean hasEnoughRoom() {
+	
+		TreeInfo[] nearbyTrees = rc.senseNearbyTrees(Constants.MIN_PLANTING_RADIUS);
+		if (nearbyTrees.length == 0) {
+			return true;
+		} 
+		
+		return false;
+	}
 
-	public class Trees {
+	private MapLocation getNearbyTreeLocation() {
+		
+		TreeInfo[] nearbyTrees = rc.senseNearbyTrees(Constants.MIN_PLANTING_RADIUS);
+		if (nearbyTrees.length > 0) {
+			return nearbyTrees[0].getLocation();
+		} else {
+			return null;
+		}
+		
+	}
+	
+	/**
+	 * builds any robot that is under-represented according to Constants, or moves randomly
+	 * @param Direction
+	 * @throws GameActionException
+	 */
+	private void buildRobot(Direction dir) throws GameActionException{
+		
+		if (getNumRobots(RobotType.SCOUT) > 0 && rc.canBuildRobot(RobotType.SCOUT, dir)) {
+			rc.buildRobot(RobotType.SCOUT, dir);
+			int currentNumRobots = getNumRobots(RobotType.SCOUT);
+			rc.broadcastInt(Utils.getSignalFromRobotType(RobotType.SCOUT), currentNumRobots-1);
+						
+		} else if (getNumRobots(RobotType.SOLDIER) > 0 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
+			rc.buildRobot(RobotType.SOLDIER, dir);
+			rc.broadcastInt(Utils.getSignalFromRobotType(RobotType.SOLDIER), getNumRobots(RobotType.SOLDIER)-1);
+
+		} else if (getNumRobots(RobotType.LUMBERJACK) > 0 && rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
+			rc.buildRobot(RobotType.LUMBERJACK, dir);
+			rc.broadcastInt(Utils.getSignalFromRobotType(RobotType.LUMBERJACK), getNumRobots(RobotType.LUMBERJACK)-1);
+
+		} else if (getNumRobots(RobotType.TANK) > 0 && rc.canBuildRobot(RobotType.TANK, dir)) {
+			rc.buildRobot(RobotType.TANK, dir);
+			rc.broadcastInt(Utils.getSignalFromRobotType(RobotType.TANK), getNumRobots(RobotType.TANK)-1);
+
+		} else{
+			tryMove(dir);
+		}
+	}
+	
+	private int getNumRobots(RobotType type) throws GameActionException {
+		return rc.readBroadcastInt(Utils.getSignalFromRobotType(type));
+	}
+	
+/*
+ * 	Farming Methods
+ */
+
+public class Trees {
 
 		public List<TreeInfo> treeArray;
 		private Direction[] directions;
 		private int NUM_TREES_AROUND_GARDENER = 6;
 		
 		public Trees() {
-//			this.treeArray = new ArrayList<TreeInfo>(NUM_TREES_AROUND_GARDENER);
 			
 			this.treeArray = Arrays.asList(new TreeInfo[NUM_TREES_AROUND_GARDENER]);
 			
@@ -92,7 +136,6 @@ public class Gardener extends DefaultRobot{
 			// Priority 2: water lowest health tree
 			} else {
 				index = this.getLowestHealthTree();
-				System.out.println("Watering at " + index);
 				if (index != -1) {
 					this.tryWater(index);
 				}
@@ -124,8 +167,6 @@ public class Gardener extends DefaultRobot{
 				} 
 				
 			}
-			
-			System.out.println(indexOfMinHealthTree);
 			return indexOfMinHealthTree;
 		}
 		
@@ -139,7 +180,7 @@ public class Gardener extends DefaultRobot{
 			for (int i = 0; i < NUM_TREES_AROUND_GARDENER; i++) {
 				Direction direction = directions[i];
 				MapLocation location = rc.getLocation().add(direction, GameConstants.BULLET_TREE_RADIUS+rc.getType().bodyRadius);
-//				System.err.println(location.x + " " + location.y);
+
 				TreeInfo tree = rc.senseTreeAtLocation(location);
 				if (tree == null) {
 					// tree does not exist

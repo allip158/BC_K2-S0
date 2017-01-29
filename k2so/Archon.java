@@ -23,6 +23,7 @@ public class Archon extends DefaultRobot{
 
 			if (rc.canHireGardener(dir) && Math.random() < .01) {
 				rc.hireGardener(dir);
+				//tryToHireGardner();
 			} 
 
 			// Move randomly
@@ -39,7 +40,18 @@ public class Archon extends DefaultRobot{
 		}
 
 	}
-	
+
+	private void tryToHireGardner() throws GameActionException{
+		Direction dir = Utils.randomDirection();
+		for(int i=0; i < 36; i+=10) {
+			float angleDegrees = i * 10;
+			if (rc.canHireGardener(dir.rotateLeftDegrees(angleDegrees))) {
+				rc.hireGardener(dir);
+				return;
+			}
+		}
+	}
+
 	private boolean isInitialized() throws GameActionException {
 		
 		return rc.readBroadcastBoolean(Constants.INITIALIZATION_CHANNEL);

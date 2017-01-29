@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Created by Andrey on 1/20/2017.
  */
-public class PotentialMapPathFinder {
+public class PotentialMapPathFinder implements PathFinder {
     private PotentialMap map;
     private PotentialMap.PotentialCell currentPotentialMapLocation;
     private double pathTraveledSoFar;

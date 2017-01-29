@@ -41,7 +41,7 @@ public class Gardener extends DefaultRobot {
 			} else {
 
 				// Generate a random direction
-				Direction dir = randomDirection();
+				Direction dir = Utils.randomDirection();
 				buildRobot(dir);
 
 			}
@@ -56,7 +56,7 @@ public class Gardener extends DefaultRobot {
 
 	private boolean hasEnoughRoom() {
 	
-		TreeInfo[] nearbyTrees = rc.senseNearbyTrees(Constants.MIN_PLANTING_RADIUS);
+		TreeInfo[] nearbyTrees = rc.senseNearbyTrees(Constants.MIN_PLANTING_RADIUS, rc.getTeam());
 		if (nearbyTrees.length == 0) {
 			return true;
 		} 
@@ -77,7 +77,7 @@ public class Gardener extends DefaultRobot {
 	
 	/**
 	 * builds any robot that is under-represented according to Constants, or moves randomly
-	 * @param Direction
+	 * @param dir
 	 * @throws GameActionException
 	 */
 	private void buildRobot(Direction dir) throws GameActionException{

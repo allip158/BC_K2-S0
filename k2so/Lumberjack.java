@@ -6,11 +6,13 @@ import java.util.function.BiFunction;
 
 public class Lumberjack extends DefaultRobot{
     private MapLocation attractionPoint;
+    private PotentialFunction potentialFunction;
 
     public Lumberjack(RobotController rc) throws GameActionException {
         super(rc);
         MapLocation[] archonLocations = rc.getInitialArchonLocations(enemy);
         attractionPoint = archonLocations[rand.nextInt(archonLocations.length)];
+        potentialFunction = getPotentialFunction();
     }
     
     @Override
@@ -24,8 +26,11 @@ public class Lumberjack extends DefaultRobot{
             TreeInfo[] trees = rc.senseNearbyTrees();
             BulletInfo[] bullets = rc.senseNearbyBullets();
 
-            PotentialMap potentialMap = new PotentialMap(trees, robots, bullets, rc, this.getPotentialFunction(), (attractLoc, cellLoc) -> -20*(1.0/cellLoc.distanceSquaredTo(attractLoc)), attractionPoint);
-            PotentialMapPathFinder pathFinder = new PotentialMapPathFinder(potentialMap, rc);
+            //PotentialMap potentialMap = new PotentialMap(trees, robots, bullets, rc, potentialFunction, (attractLoc, cellLoc) -> -20*(1.0/cellLoc.distanceSquaredTo(attractLoc)), attractionPoint);
+            //PathFinder pathFinder = new PotentialMapPathFinder(potentialMap, rc);
+
+            PathFinder pathFinder = new PotentialPathFinder(trees, robots, bullets, rc, potentialFunction,
+                    (attractLoc, cellLoc) -> -20*(1.0/cellLoc.distanceSquaredTo(attractLoc)), attractionPoint);
             MapLocation locationToMove = pathFinder.getDestinationLocation();
             if (rc.canMove(locationToMove)) {
                 rc.move(locationToMove);
@@ -46,36 +51,41 @@ public class Lumberjack extends DefaultRobot{
         }
     }
 
-    private BiFunction<BodyInfo[], MapLocation, Double> getPotentialFunction() {
-        return new BiFunction<BodyInfo[], MapLocation, Double>() {
+    private PotentialFunction getPotentialFunction() {
+        return new PotentialFunction() {
             @Override
-            public Double apply(BodyInfo[] bodyInfos, MapLocation mapLocation) {
-                double potentialResult = 0.0;
-                for(BodyInfo object: bodyInfos) {
-                    double inverseDistance = 1.0/mapLocation.distanceTo(object.getLocation());
-                    if(object.isBullet()) {
-                        BulletInfo bulletObject = (BulletInfo) object;
-                        potentialResult += Utils.getBulletPotential(bulletObject, mapLocation);
+            public float apply(RobotInfo[] robots, TreeInfo[] trees, BulletInfo[] bullets, MapLocation location) {
+                float potentialResult = 0.0f;
+                float inverseDistance;
+                for(RobotInfo robot: robots) {
+                    if(robot.getTeam().equals(rc.getTeam()) && location.distanceTo(robot.getLocation()) > rt.bodyRadius + robot.getType().bodyRadius) {
+                        //do not consider a alli robots outside of stride radius
+                        continue;
                     }
-                    if(object.isRobot()) {
-                        RobotInfo robotObject = (RobotInfo) object;
-                        if(robotObject.getTeam().equals(enemy)) {
-                            potentialResult += (-1000.0 * inverseDistance);
-                        } else {
-                            potentialResult += (0.001 * inverseDistance);
-                        }
+                    inverseDistance = 1.0f/location.distanceTo(robot.getLocation());
+                    if (robot.getTeam().equals(enemy)) {
+                        potentialResult += (-1000.0 * inverseDistance);
+                    } else {
+                        potentialResult += (50.0 * inverseDistance);
                     }
-                    if(object.isTree()) {
-                        TreeInfo treeObject = (TreeInfo) object;
-                        if(treeObject.getTeam().equals(enemy)) {
-                            potentialResult += (-2.0 - 5.0 * inverseDistance);
-                        } else if(treeObject.getTeam().equals(Team.NEUTRAL)) {
-                            potentialResult += (-10.0 - 1.0 * inverseDistance * treeObject.getContainedBullets());
-                            potentialResult += (-1.0 * Utils.getRobotValue(treeObject.getContainedRobot()) * inverseDistance);
-                        } else {
-                            potentialResult += (1.0 + 1.0 * inverseDistance);
-                        }
+                }
+                for(TreeInfo tree: trees) {
+                    if(tree.getTeam().equals(Team.NEUTRAL) && tree.getContainedRobot() == null && tree.getContainedBullets() == 0)
+                        continue;
+                    if(tree.getTeam().equals(rc.getTeam()) &&  location.distanceTo(tree.getLocation()) > rt.bodyRadius + tree.getRadius())
+                        continue;
+                    inverseDistance = 1.0f/location.distanceTo(tree.getLocation());
+                    if(tree.getTeam().equals(enemy)) {
+                        potentialResult += (-2.0 - 5.0 * inverseDistance);
+                    } else if(tree.getTeam().equals(Team.NEUTRAL)) {
+                        potentialResult += (-10.0 - 1.0 * inverseDistance * tree.getContainedBullets());
+                        potentialResult += (-1.0 * Utils.getRobotValue(tree.getContainedRobot()) * inverseDistance);
+                    } else {
+                        potentialResult += (0.1 * inverseDistance);
                     }
+                }
+                for(BulletInfo bullet: bullets) {
+                    potentialResult += Utils.getBulletPotential(bullet, location);
                 }
                 return potentialResult;
             }
@@ -91,7 +101,7 @@ public class Lumberjack extends DefaultRobot{
 
 
     private void shakeThenChop(TreeInfo[] neutralTrees) throws GameActionException {
-
+        //TODO make shaking a priority!
         TreeInfo closestTree = (TreeInfo) Utils.findClosestBody(neutralTrees, rc.getLocation());
         MapLocation treeLocation = closestTree.getLocation();
         if (rc.canShake(treeLocation) && closestTree.containedBullets > 0) {

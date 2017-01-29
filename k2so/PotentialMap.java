@@ -17,9 +17,11 @@ public class PotentialMap {
     private PotentialCell startingCell; //this represents center of the map(i.e. robots starting point)
     private float cellSize;
 
-    private BodyInfo[] gameObjects;//array of all objects in the robot's vision
+    private TreeInfo[] trees;
+    private RobotInfo[] robots;
+    private BulletInfo[] bullets;
 
-    private BiFunction<BodyInfo[], MapLocation, Double> objectsPotentialFunction;
+    private PotentialFunction objectsPotentialFunction;
     private BiFunction<MapLocation, MapLocation, Double> pointPotential;
     private MapLocation attractingPoint;
     /**
@@ -31,12 +33,15 @@ public class PotentialMap {
      */
 
     public PotentialMap(TreeInfo[] trees, RobotInfo[] robots, BulletInfo[] bullets, RobotController rc,
-                        BiFunction<BodyInfo[], MapLocation, Double> objectsPotentialFunction, BiFunction<MapLocation, MapLocation, Double> pointPotential, MapLocation attractingPoint) {
+                        PotentialFunction objectsPotentialFunction, BiFunction<MapLocation, MapLocation, Double> pointPotential, MapLocation attractingPoint) {
 
-        this.gameObjects = Utils.concatenateAllObjects(trees, robots, bullets);
         this.objectsPotentialFunction = objectsPotentialFunction;
         this.pointPotential = pointPotential;
         this.attractingPoint = attractingPoint;
+
+        this.trees = trees;
+        this.robots = robots;
+        this.bullets = bullets;
 
         cellSize = (rc.getType().strideRadius*2) / ((float) NUM_CELLS);
         map = new PotentialCell[NUM_CELLS][NUM_CELLS];
@@ -108,7 +113,7 @@ public class PotentialMap {
         }
         System.out.println("Computing cell's potential");
         MapLocation cellLocation = cell.getLocation();
-        double potentialValue = objectsPotentialFunction.apply(gameObjects, cellLocation);
+        double potentialValue = objectsPotentialFunction.apply(robots, trees, bullets, cellLocation);
         potentialValue += pointPotential.apply(attractingPoint, cellLocation);
         //potentialValue += Arrays.asList(gameObjects).stream().mapToDouble(t -> objectsPotentialFunction.apply(t, cellLocation)).sum();
 

@@ -11,6 +11,7 @@ public class Lumberjack extends DefaultRobot{
     public Lumberjack(RobotController rc) throws GameActionException {
         super(rc);
         MapLocation[] archonLocations = rc.getInitialArchonLocations(enemy);
+        System.out.println("There are " + archonLocations.length + " enemy archons");
         attractionPoint = archonLocations[rand.nextInt(archonLocations.length)];
         potentialFunction = getPotentialFunction();
     }
@@ -28,9 +29,12 @@ public class Lumberjack extends DefaultRobot{
 
             //PotentialMap potentialMap = new PotentialMap(trees, robots, bullets, rc, potentialFunction, (attractLoc, cellLoc) -> -20*(1.0/cellLoc.distanceSquaredTo(attractLoc)), attractionPoint);
             //PathFinder pathFinder = new PotentialMapPathFinder(potentialMap, rc);
+            if(turnsAtLastLocation > 5 && rc.senseNearbyTrees(GameConstants.INTERACTION_DIST_FROM_EDGE + rt.bodyRadius, Team.NEUTRAL).length == 0) {
+                moveRandomly();
+            }
 
             PathFinder pathFinder = new PotentialPathFinder(trees, robots, bullets, rc, potentialFunction,
-                    (attractLoc, cellLoc) -> -20*(1.0/cellLoc.distanceSquaredTo(attractLoc)), attractionPoint);
+                    (attractLoc, cellLoc) -> -20.0*(1.0/cellLoc.distanceSquaredTo(attractLoc)), attractionPoint);
             MapLocation locationToMove = pathFinder.getDestinationLocation();
             if (rc.canMove(locationToMove)) {
                 rc.move(locationToMove);
@@ -58,30 +62,35 @@ public class Lumberjack extends DefaultRobot{
                 float potentialResult = 0.0f;
                 float inverseDistance;
                 for(RobotInfo robot: robots) {
-                    if(robot.getTeam().equals(rc.getTeam()) && location.distanceTo(robot.getLocation()) > rt.bodyRadius + robot.getType().bodyRadius) {
+                    if(robot.getTeam().equals(rc.getTeam()) && location.distanceTo(robot.getLocation()) > (rt.bodyRadius + robot.getType().bodyRadius)) {
                         //do not consider a alli robots outside of stride radius
+                        continue;
+                    }
+                    if(robot.getTeam() == rc.getTeam() && robot.getType() == RobotType.LUMBERJACK) {
+                        inverseDistance = 1.0f/location.distanceTo(robot.getLocation());
+                        potentialResult += (50.0 * inverseDistance);
                         continue;
                     }
                     inverseDistance = 1.0f/location.distanceTo(robot.getLocation());
                     if (robot.getTeam().equals(enemy)) {
                         potentialResult += (-1000.0 * inverseDistance);
                     } else {
-                        potentialResult += (50.0 * inverseDistance);
+                        potentialResult += (100.0 * inverseDistance);
                     }
                 }
                 for(TreeInfo tree: trees) {
                     if(tree.getTeam().equals(Team.NEUTRAL) && tree.getContainedRobot() == null && tree.getContainedBullets() == 0)
                         continue;
-                    if(tree.getTeam().equals(rc.getTeam()) &&  location.distanceTo(tree.getLocation()) > rt.bodyRadius + tree.getRadius())
+                    if(tree.getTeam().equals(rc.getTeam()) &&  location.distanceTo(tree.getLocation()) > (rt.bodyRadius + tree.getRadius()))
                         continue;
                     inverseDistance = 1.0f/location.distanceTo(tree.getLocation());
                     if(tree.getTeam().equals(enemy)) {
-                        potentialResult += (-2.0 - 5.0 * inverseDistance);
+                        potentialResult += (-5.0 * inverseDistance);
                     } else if(tree.getTeam().equals(Team.NEUTRAL)) {
-                        potentialResult += (-10.0 - 1.0 * inverseDistance * tree.getContainedBullets());
-                        potentialResult += (-1.0 * Utils.getRobotValue(tree.getContainedRobot()) * inverseDistance);
+                        potentialResult += (-10.0 * inverseDistance * tree.getContainedBullets());
+                        potentialResult += (-10.0 * Utils.getRobotValue(tree.getContainedRobot()) * inverseDistance);
                     } else {
-                        potentialResult += (0.1 * inverseDistance);
+                        potentialResult += (50.0 * inverseDistance);
                     }
                 }
                 for(BulletInfo bullet: bullets) {
@@ -94,9 +103,9 @@ public class Lumberjack extends DefaultRobot{
 
     private boolean shouldStrike() {
         RobotInfo[] enemyRobots = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
-        RobotInfo[] alleyRobots = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam());
-        TreeInfo[] enemyTrees = rc.senseNearbyTrees(GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
-        return Utils.getRobotsValues(enemyRobots) + Utils.getBulletTreeValue()*enemyTrees.length > Utils.getRobotsValues(alleyRobots);
+//        RobotInfo[] alleyRobots = rc.senseNearbyRobots(GameConstants.LUMBERJACK_STRIKE_RADIUS, rc.getTeam());
+//        TreeInfo[] enemyTrees = rc.senseNearbyTrees(GameConstants.LUMBERJACK_STRIKE_RADIUS, enemy);
+        return enemyRobots.length > 0;
     }
 
 

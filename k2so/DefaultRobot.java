@@ -1,6 +1,8 @@
 package k2so;
-import battlecode.common.*; 
+import battlecode.common.*;
+import scala.collection.immutable.Stream;
 
+import java.util.Map;
 import java.util.Random;
 
 // TODO: clear out death array when full
@@ -12,10 +14,14 @@ public strictfp class DefaultRobot {
     protected RobotType rt;
     protected Random rand;
     protected Team enemy;
-	
+
+    protected MapLocation lastLocation;
+    protected int turnsAtLastLocation;
+
 	public DefaultRobot(RobotController rc){
 
 		this.rc = rc;
+		lastLocation = rc.getLocation();
 		rand = new Random(rc.getID());
 		rt = rc.getType();
         enemy = rc.getTeam().opponent();
@@ -25,8 +31,13 @@ public strictfp class DefaultRobot {
 		donateToWin();
 		executeTurn();
      //donateToWin();
-    donateAtTheLastTurn();
-
+		donateAtTheLastTurn();
+		if(rc.getLocation().equals(lastLocation)) {
+			turnsAtLastLocation++;
+		} else {
+			turnsAtLastLocation = 0;
+		}
+		lastLocation = rc.getLocation();
 //		sendDeathSignal();
 
 	}
@@ -36,7 +47,24 @@ public strictfp class DefaultRobot {
 		return;
 	}
 
-	
+
+	public void moveRandomly() throws GameActionException{
+		Direction dir = Utils.randomDirection();
+		for(int i=0; i < 36; i+=10) {
+			float angleDegrees = i * 10;
+			if (rc.canMove(dir.rotateLeftDegrees(angleDegrees), rc.getType().strideRadius)){
+				rc.move(dir.rotateLeftDegrees(angleDegrees), rc.getType().strideRadius);
+				return;
+			}
+		}
+	}
+
+
+
+	public void tryMove() throws GameActionException {
+
+	}
+
 	/**
 	 * 
 	 * @return false if dying but no room in deathArray, true otherwise

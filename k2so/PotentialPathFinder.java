@@ -19,16 +19,29 @@ public class PotentialPathFinder implements PathFinder {
     private PotentialFunction objectsPotentialFunction;
     private BiFunction<MapLocation, MapLocation, Double> pointPotential;
     private MapLocation attractingPoint;
+    private MapLocation repellingWallPoint;
 
     private int NUM_CELLS = 3;
 
 
 
     public PotentialPathFinder(TreeInfo[] trees, RobotInfo[] robots, BulletInfo[] bullets, RobotController rc,
-                               PotentialFunction objectsPotentialFunction, BiFunction<MapLocation, MapLocation, Double> pointPotential, MapLocation attractingPoint) {
+                               PotentialFunction objectsPotentialFunction, BiFunction<MapLocation, MapLocation, Double> pointPotential,
+                               MapLocation attractingPoint) throws GameActionException{
         this.objectsPotentialFunction = objectsPotentialFunction;
         this.pointPotential = pointPotential;
         this.attractingPoint = attractingPoint;
+        this.repellingWallPoint = null;
+
+        Direction dir = Direction.NORTH;
+        for(int i = 0; i < 4; i++) {
+            dir = dir.rotateLeftDegrees(90);
+            MapLocation loc = rc.getLocation().add(dir, rc.getType().bodyRadius*5);
+            if (!rc.onTheMap(loc)){
+                this.repellingWallPoint = loc;
+            }
+        }
+
 
         startingMapLocation = rc.getLocation();
         cellSize = (rc.getType().strideRadius*2) / ((float) NUM_CELLS);
@@ -49,7 +62,12 @@ public class PotentialPathFinder implements PathFinder {
                 nextMapLoc = new MapLocation(startingMapLocation.x + cellSize * (i - (NUM_CELLS - 1)/2),
                         startingMapLocation.y + cellSize * (j - (NUM_CELLS - 1)/2));
                 nextPotential = objectsPotentialFunction.apply(robots, trees, bullets, nextMapLoc);
-                nextPotential += pointPotential.apply(attractingPoint, nextMapLoc);
+                if(pointPotential != null) {
+                    nextPotential += pointPotential.apply(attractingPoint, nextMapLoc);
+                }
+                if(repellingWallPoint != null) {
+                    nextPotential += 100.0f/nextMapLoc.distanceTo(repellingWallPoint);
+                }
                 if(nextPotential < lowestPotential) {
                     lowestPotential = nextPotential;
                     locWithLowestPotential = nextMapLoc;

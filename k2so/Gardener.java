@@ -7,15 +7,18 @@ import java.util.Arrays;
 
 
 import battlecode.common.*;
+import scala.collection.immutable.Stream;
 
 public class Gardener extends DefaultRobot {
 	
 	Trees trees;
 	Boolean isBaby = true;
+    private PotentialFunction potentialFunction;
 
 	public Gardener(RobotController rc) throws GameActionException {
 		super(rc);
 		this.trees = new Trees();
+        potentialFunction = getPotentialFunction();
 	}
 
 	@Override
@@ -24,8 +27,8 @@ public class Gardener extends DefaultRobot {
 		try {
 
 			/* The ratio of gardeners to builders */
-			if (rc.getID() % (Constants.RATIO_GARDENERS_TO_BUILDERS+1) < Constants.RATIO_GARDENERS_TO_BUILDERS) {
-				trees.garden();
+//			if (rc.getID() % (Constants.RATIO_GARDENERS_TO_BUILDERS+1) < Constants.RATIO_GARDENERS_TO_BUILDERS) {
+//				trees.garden();
 //				if(hasEnoughRoom() && !isBaby) {
 //					trees.garden();
 //				} else {
@@ -38,15 +41,49 @@ public class Gardener extends DefaultRobot {
 //						tryMove(randomDirection());
 //					}
 //				}
-			} else {
+//			} else {
+//
+//				// Generate a random direction
+//				Direction dir = Utils.randomDirection();
+//				buildRobot(dir);
+//
+//			}
 
-				// Generate a random direction
-				Direction dir = Utils.randomDirection();
-				buildRobot(dir);
+            if(rc.senseNearbyTrees(rc.getType().sensorRadius, Team.NEUTRAL).length > 5){
+                buildLumberjack();
+            }
 
-			}
+            if(turnsAtLastLocation > 5 && isBaby) {
+                moveRandomly();
+            }
 
-			isBaby = false;
+            if(isBaby) {
+                RobotInfo[] nearbyRobots = rc.senseNearbyRobots();
+                TreeInfo[] nearbyTrees = rc.senseNearbyTrees();
+                BulletInfo[] nearbyBullets = rc.senseNearbyBullets();
+
+                PathFinder pathFinder = new PotentialPathFinder(nearbyTrees, nearbyRobots, nearbyBullets, rc, potentialFunction, null, null);
+                MapLocation locationToMove = pathFinder.getDestinationLocation();
+
+                if (rc.canMove(locationToMove)) {
+                    rc.move(locationToMove);
+                    System.out.println("Moving to " + locationToMove.x + " " + locationToMove.y);
+                } else {
+                    System.out.println("Can't move to " + locationToMove.x + " " + locationToMove.y);
+                }
+                if(rc.getTeamBullets() > Constants.MIN_BULLETS_TO_BUILD_LUMBERJACK) {
+                    if(nearbyBullets.length + nearbyRobots.length + nearbyTrees.length < 10) {
+                        buildLumberjack();
+                    }
+				}
+                if(hasEnoughRoom() && !nearEdge()) {
+                    isBaby = false;
+                    trees.garden();
+                }
+            } else {
+                trees.garden();
+            }
+
 
 		} catch (Exception e) {
 			System.out.println("Gardener Exception");
@@ -56,13 +93,26 @@ public class Gardener extends DefaultRobot {
 
 	private boolean hasEnoughRoom() {
 	
-		TreeInfo[] nearbyTrees = rc.senseNearbyTrees(Constants.MIN_PLANTING_RADIUS, rc.getTeam());
-		if (nearbyTrees.length == 0) {
+		TreeInfo[] nearbyTrees = rc.senseNearbyTrees(Constants.MIN_PLANTING_RADIUS);
+		RobotInfo[] nearbyRobots = rc.senseNearbyRobots(Constants.MIN_PLANTING_RADIUS);
+		if (nearbyTrees.length == 0 && nearbyRobots.length == 0) {
 			return true;
 		} 
 		
 		return false;
 	}
+
+    public boolean nearEdge() throws GameActionException{
+        Direction dir = Direction.NORTH;
+        for(int i = 0; i < 4; i++) {
+            dir = dir.rotateLeftDegrees(90);
+            MapLocation loc = rc.getLocation().add(dir, Constants.MIN_PLANTING_RADIUS);
+            if (!rc.onTheMap(loc)){
+                return true;
+            }
+        }
+        return false;
+    }
 
 	private MapLocation getNearbyTreeLocation() {
 		
@@ -76,32 +126,18 @@ public class Gardener extends DefaultRobot {
 	}
 	
 	/**
-	 * builds any robot that is under-represented according to Constants, or moves randomly
-	 * @param dir
+	 *
 	 * @throws GameActionException
 	 */
-	private void buildRobot(Direction dir) throws GameActionException{
-		
-		if (getNumRobots(RobotType.SCOUT) > 0 && rc.canBuildRobot(RobotType.SCOUT, dir)) {
-			rc.buildRobot(RobotType.SCOUT, dir);
-			int currentNumRobots = getNumRobots(RobotType.SCOUT);
-			rc.broadcastInt(Utils.getSignalFromRobotType(RobotType.SCOUT), currentNumRobots-1);
-						
-		} else if (getNumRobots(RobotType.SOLDIER) > 0 && rc.canBuildRobot(RobotType.SOLDIER, dir)) {
-			rc.buildRobot(RobotType.SOLDIER, dir);
-			rc.broadcastInt(Utils.getSignalFromRobotType(RobotType.SOLDIER), getNumRobots(RobotType.SOLDIER)-1);
-
-		} else if (getNumRobots(RobotType.LUMBERJACK) > 0 && rc.canBuildRobot(RobotType.LUMBERJACK, dir)) {
-			rc.buildRobot(RobotType.LUMBERJACK, dir);
-			rc.broadcastInt(Utils.getSignalFromRobotType(RobotType.LUMBERJACK), getNumRobots(RobotType.LUMBERJACK)-1);
-
-		} else if (getNumRobots(RobotType.TANK) > 0 && rc.canBuildRobot(RobotType.TANK, dir)) {
-			rc.buildRobot(RobotType.TANK, dir);
-			rc.broadcastInt(Utils.getSignalFromRobotType(RobotType.TANK), getNumRobots(RobotType.TANK)-1);
-
-		} else{
-			tryMove(dir);
-		}
+	private void buildLumberjack() throws GameActionException{
+        Direction dir = Utils.randomDirection();
+        for(int i=0; i < 36; i+=10) {
+            float angleDegrees = i * 10;
+            if (rc.canBuildRobot(RobotType.LUMBERJACK, dir.rotateLeftDegrees(angleDegrees))) {
+                rc.buildRobot(RobotType.LUMBERJACK, dir.rotateLeftDegrees(angleDegrees));
+                return;
+            }
+        }
 	}
 	
 	private int getNumRobots(RobotType type) throws GameActionException {
@@ -114,62 +150,80 @@ public class Gardener extends DefaultRobot {
 
 public class Trees {
 
-		public List<TreeInfo> treeArray;
+		public Tree[] treeArray;
 		private Direction[] directions;
 		private int NUM_TREES_AROUND_GARDENER = 6;
 		
 		public Trees() {
 			
-			this.treeArray = Arrays.asList(new TreeInfo[NUM_TREES_AROUND_GARDENER]);
-			
+			this.treeArray = new Tree[NUM_TREES_AROUND_GARDENER];
+
 			this.directions = new Direction[]{	Direction.getNorth().rotateLeftDegrees(30), 
 												Direction.getNorth().rotateRightDegrees(30), 
 												Direction.getEast(), 
 												Direction.getSouth().rotateLeftDegrees(30), 
 												Direction.getSouth().rotateRightDegrees(30), 
 												Direction.getWest()};
+
+            for(int i = 0; i < NUM_TREES_AROUND_GARDENER; i++) {
+                treeArray[i] = new Tree(directions[i]);
+            }
 		}
 		
 		public void garden() throws GameActionException {
-			
+
+		    //Update tree states
+            updateTreeArray();
+
 			// Priority 1: plant
 			int index = this.getAvailableDirectionIndex();
 			if (index != -1) {
 				this.tryPlant(index);
 			
 			// Priority 2: water lowest health tree
-			} else {
-				index = this.getLowestHealthTree();
-				if (index != -1) {
-					this.tryWater(index);
-				}
 			}
-			
+
+            index = this.getLowestHealthTree();
+            if (index != -1) {
+                this.tryWater(index);
+            }
 		}
-		
+
+        public void updateTreeArray() throws GameActionException{
+            for(Tree tree: treeArray) {
+                TreeInfo sensedTree = rc.senseTreeAtLocation(getLocationFromDirection(tree.getDirection()));
+                RobotInfo sensedRobot = rc.senseRobotAtLocation(getLocationFromDirection(tree.getDirection()));
+                if((sensedTree != null && sensedTree.getTeam().equals(Team.NEUTRAL)) || sensedRobot != null) {
+                    tree.setTreeState(TreeState.OCCUPIED);
+                } else if(sensedTree != null && sensedTree.getTeam().equals(rc.getTeam())) {
+                    tree.setTreeState(TreeState.PLANTED);
+                    tree.setTreeInfo(sensedTree);
+                } else if(sensedTree == null && sensedRobot == null) {
+                    tree.setTreeState(TreeState.EMPTY);
+                }
+            }
+        }
+
+        public MapLocation getLocationFromDirection(Direction dir) {
+            return rc.getLocation().add(dir, GameConstants.BULLET_TREE_RADIUS+rc.getType().bodyRadius);
+        }
+
 		/**
 		 *  gets index in treeArray of lowest health tree or -1 if none
 		 * 	@return int index
 		 */
 		private int getLowestHealthTree() throws GameActionException {
-			float minimumHealth = 50;
+		    //initialize to the maximum possible health of a bullet tree
+			float minimumHealth = GameConstants.BULLET_TREE_MAX_HEALTH;
 			int indexOfMinHealthTree = -1;
-			
+
 			for (int i = 0; i < NUM_TREES_AROUND_GARDENER; i++) {
-				
-				TreeInfo tree = treeArray.get(i);
-				if (tree != null && rc.senseTreeAtLocation(tree.location) != null) {
-					
-					/* NOTE: only use location in tree info, health changes */
-					TreeInfo updatedTreeInfo = rc.senseTreeAtLocation(tree.location);
-					
-					float health = updatedTreeInfo.getHealth();
-					if (health < minimumHealth) {
-						indexOfMinHealthTree = i;
-						minimumHealth = health;
-					}
-				} 
-				
+                if(treeArray[i].getTreeState() == TreeState.PLANTED) {
+                    if(treeArray[i].getTreeInfo().getHealth() < minimumHealth) {
+                        minimumHealth = treeArray[i].getTreeInfo().getHealth();
+                        indexOfMinHealthTree = i;
+                    }
+                }
 			}
 			return indexOfMinHealthTree;
 		}
@@ -180,14 +234,9 @@ public class Trees {
 		 * @throws GameActionException
 		 */
 		private int getAvailableDirectionIndex() throws GameActionException{
-			
 			for (int i = 0; i < NUM_TREES_AROUND_GARDENER; i++) {
-				Direction direction = directions[i];
-				MapLocation location = rc.getLocation().add(direction, GameConstants.BULLET_TREE_RADIUS+rc.getType().bodyRadius);
-
-				TreeInfo tree = rc.senseTreeAtLocation(location);
-				if (tree == null) {
-					// tree does not exist
+				if (treeArray[i].getTreeState() == TreeState.EMPTY) {
+					// tree does not exist and the location is empty
 					return i;
 				}
 			}
@@ -201,18 +250,10 @@ public class Trees {
 		 */
 		private Boolean tryPlant(int index) throws GameActionException{
 			
-			Direction direction = directions[index];
+			Direction direction = treeArray[index].getDirection();
 			
 			if (rc.canPlantTree(direction)) {
 				rc.plantTree(direction);
-				
-				MapLocation location = rc.getLocation().add(direction, GameConstants.BULLET_TREE_RADIUS+rc.getType().bodyRadius);
-				
-				TreeInfo info = rc.senseTreeAtLocation(location);
-
-				/* Replace element currently there with info */
-				treeArray.set(index, info);
-				
 				return true;
 			} 
 			return false;
@@ -220,7 +261,7 @@ public class Trees {
 		
 		private Boolean tryWater(int index) throws GameActionException{
 			
-			TreeInfo tree = treeArray.get(index);
+			TreeInfo tree = treeArray[index].getTreeInfo();
 			
 			if (!tree.equals(null) && rc.canWater(tree.getID())) {
 				rc.water(tree.getID());
@@ -230,10 +271,84 @@ public class Trees {
 			return false;
 		}
 
-	}	
+	}
 
 
+    public enum TreeState {
+        OCCUPIED, PLANTED, EMPTY, UNKNOWN
+    }
 
+    private class Tree {
+        private TreeState treeState;
+        private TreeInfo treeInfo;
+        private Direction direction;
 
+        public Tree(Direction dir) {
+            this.treeState = TreeState.UNKNOWN;
+            this.treeInfo = null;
+            this.direction = dir;
+        }
 
+        public void setTreeState (TreeState state) {
+            this.treeState = state;
+        }
+
+        public void setTreeInfo (TreeInfo treeInfo) {
+            this.treeInfo = treeInfo;
+        }
+
+        public TreeState getTreeState() {
+            return this.treeState;
+        }
+
+        public TreeInfo getTreeInfo() {
+            return this.treeInfo;
+        }
+
+        public Direction getDirection() {
+            return direction;
+        }
+    }
+
+    private PotentialFunction getPotentialFunction() {
+        return new PotentialFunction() {
+            @Override
+            public float apply(RobotInfo[] robots, TreeInfo[] trees, BulletInfo[] bullets, MapLocation location) {
+                float potentialResult = 0.0f;
+                float inverseDistance;
+                for(RobotInfo robot: robots) {
+                    if(robot.getTeam().equals(rc.getTeam()) &&
+                            location.distanceTo(robot.getLocation()) > (rt.bodyRadius + robot.getType().bodyRadius) &&
+                            robot.getType() != RobotType.GARDENER ) {
+                        //do not consider a alli robots outside of stride radius
+                        continue;
+                    }
+                    inverseDistance = 1.0f/location.distanceTo(robot.getLocation());
+                    if (robot.getTeam().equals(enemy)) {
+                        potentialResult += (500.0 * inverseDistance);
+                    } else {
+                        potentialResult += (50.0 * inverseDistance);
+                    }
+                }
+                for(TreeInfo tree: trees) {
+                    if(tree.getTeam().equals(Team.NEUTRAL) &&  location.distanceTo(tree.getLocation()) > rt.bodyRadius + tree.getRadius())
+                        continue;
+                    if(tree.getTeam().equals(Team.NEUTRAL) &&  location.distanceTo(tree.getLocation()) > rt.bodyRadius + tree.getRadius())
+                        continue;
+                    inverseDistance = 1.0f/location.distanceTo(tree.getLocation());
+                    if(tree.getTeam().equals(enemy)) {
+                        potentialResult += (500.0 * inverseDistance);
+                    } else if(tree.getTeam().equals(Team.NEUTRAL)) {
+                        potentialResult += (50.0 * inverseDistance);
+                    } else {
+                        potentialResult += (100.0 * inverseDistance);
+                    }
+                }
+//                for(BulletInfo bullet: bullets) {
+//                    potentialResult += Utils.getBulletPotential(bullet, location);
+//                }
+                return potentialResult;
+            }
+        };
+    }
 }

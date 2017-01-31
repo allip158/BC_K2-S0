@@ -1,5 +1,8 @@
 package k2so;
 
+import battlecode.common.GameConstants;
+import battlecode.common.RobotType;
+
 public final class Constants {
 	
 	/* Number of rounds before scouts make their density calculation */
@@ -18,20 +21,26 @@ public final class Constants {
 	public static final int ARCHON_DEATH_SIGNAL = 5;
 	
 	/* Constants indicating what number each of the robots will be present */
-	public static final int NUM_LUMBERJACK = 100;
+	public static final int NUM_LUMBERJACK = 500;
 	public static final int NUM_SCOUT = 0;
 	public static final int NUM_SOLDIER = 0;
 	public static final int NUM_TANK = 0;
-	public static final int NUM_GARDENER = 10;	
+	public static final int NUM_GARDENER = 50;
 	
 	/* Ratio of Gardeners who garden to those who build robots, i.e. X to 1 */
 	public static final int RATIO_GARDENERS_TO_BUILDERS = 6;
+
+	/* Minimum number of bullets that need to be stored before gardener will build units */
+	public static final float MIN_BULLETS_TO_BUILD_LUMBERJACK = 500;
+
+	/* Minimum number of gardeners in the vicinity of an archon before he stops building them */
+    public static final int MIN_NUM_OF_GARDENERS_TO_STOP_BUILDING = 6;
 	
 	/* Index in signal array to store boolean */
 	public static final int INITIALIZATION_CHANNEL = 2;
 	
 	/* Necessary radius to be clear for gardeners to plant */
-	public static final int MIN_PLANTING_RADIUS = 2;
+	public static final float MIN_PLANTING_RADIUS = GameConstants.BULLET_TREE_RADIUS*4;
 	
 	
 }
